@@ -1,7 +1,7 @@
 server:
   addr: ":5005"
-  certificate: /Users/liaoyu/Workspace/go/src/github.com/firelyu/docker_auth/auth_server/server.pem
-  key: /Users/liaoyu/Workspace/go/src/github.com/firelyu/docker_auth/auth_server/server.key
+  certificate: examples/gc/ssl/server.pem
+  key: examples/gc/ssl/server.key
 
 token:
   issuer: "Acme auth server"  # Must match issuer in the Registry config.
