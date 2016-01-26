@@ -24,8 +24,8 @@ import (
 	"io/ioutil"
 	"strings"
 
-	"github.com/cesanta/docker_auth/auth_server/authn"
-	"github.com/cesanta/docker_auth/auth_server/authz"
+	"github.com/firelyu/docker_auth/auth_server/authn"
+	"github.com/firelyu/docker_auth/auth_server/authz"
 	"github.com/docker/libtrust"
 	yaml "gopkg.in/yaml.v2"
 )
@@ -39,6 +39,7 @@ type Config struct {
 	MongoAuth  *authn.MongoAuthConfig         `yaml:"mongo_auth,omitempty"`
 	ACL        authz.ACL                      `yaml:"acl"`
 	ACLMongo   *authz.ACLMongoConfig          `yaml:"acl_mongo"`
+	GCUsers    map[string]*authn.GCRequirements `yaml:"gc,omitempty"`
 }
 
 type ServerConfig struct {
@@ -71,7 +72,7 @@ func validate(c *Config) error {
 	if c.Token.Expiration <= 0 {
 		return fmt.Errorf("expiration must be positive, got %d", c.Token.Expiration)
 	}
-	if c.Users == nil && c.GoogleAuth == nil && c.LDAPAuth == nil && c.MongoAuth == nil {
+	if c.Users == nil && c.GoogleAuth == nil && c.LDAPAuth == nil && c.MongoAuth == nil && c.GCUsers == nil {
 		return errors.New("no auth methods are configured, this is probably a mistake. Use an empty user map if you really want to deny everyone.")
 	}
 	if c.MongoAuth != nil {
