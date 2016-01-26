@@ -1,0 +1,32 @@
+server:
+  addr: ":5005"
+  certificate: /Users/liaoyu/Workspace/go/src/github.com/firelyu/docker_auth/auth_server/server.pem
+  key: /Users/liaoyu/Workspace/go/src/github.com/firelyu/docker_auth/auth_server/server.key
+
+token:
+  issuer: "Acme auth server"  # Must match issuer in the Registry config.
+  expiration: 900
+
+#users:
+#  # Password is specified as a BCrypt hash. Use htpasswd -B to generate.
+#  "admin":
+#    password: "$2y$05$LO.vzwpWC5LZGqThvEfznu8qhb5SGqvBSWY1J3yZ4AxtMRZ3kN5jC"  # badmin
+#  "test":
+#    password: "$2y$05$WuwBasGDAgr.QCbGIjKJaep4dhxeai9gNZdmBnQXqpKly57oNutya"  # 123
+
+acl:
+  - match: {account: "admin"}
+    actions: ["*"]
+    comment: "Admin has full access to everything."
+  - match: {account: "test"}
+    actions: ["pull"]
+    comment: "User \"user\" can pull stuff."
+  - match: {account: "user1"}
+    actions: ["pull"]
+    comment: "User \"user\" can pull stuff."
+  # Access is denied by default.
+gc:
+  "user1":
+    password: "password1"
+  "user2":
+    password: "password2"
