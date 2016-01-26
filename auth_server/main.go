@@ -26,7 +26,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/cesanta/docker_auth/auth_server/server"
+	"github.com/firelyu/docker_auth/auth_server/server"
 	"github.com/facebookgo/httpdown"
 	"github.com/golang/glog"
 	fsnotify "gopkg.in/fsnotify.v1"
@@ -163,6 +163,7 @@ func main() {
 		glog.Exitf("Config file not specified")
 	}
 	c, err := server.LoadConfig(cf)
+	glog.V(2).Infoln("config", c)
 	if err != nil {
 		glog.Exitf("Failed to load config: %s", err)
 	}

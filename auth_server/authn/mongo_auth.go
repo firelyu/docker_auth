@@ -19,7 +19,7 @@ package authn
 import (
 	"fmt"
 
-	"github.com/cesanta/docker_auth/auth_server/mgo_session"
+	"github.com/firelyu/docker_auth/auth_server/mgo_session"
 	"github.com/golang/glog"
 	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/mgo.v2"
