@@ -27,8 +27,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cesanta/docker_auth/auth_server/authn"
-	"github.com/cesanta/docker_auth/auth_server/authz"
+	"github.com/firelyu/docker_auth/auth_server/authn"
+	"github.com/firelyu/docker_auth/auth_server/authz"
 	"github.com/docker/distribution/registry/auth/token"
 	"github.com/golang/glog"
 )
@@ -72,6 +72,9 @@ func NewAuthServer(c *Config) (*AuthServer, error) {
 	}
 	if c.Users != nil {
 		as.authenticators = append(as.authenticators, authn.NewStaticUserAuth(c.Users))
+	}
+	if c.GCUsers != nil {
+		as.authenticators = append(as.authenticators, authn.NewGCUserAuth(c.GCUsers))
 	}
 	if c.GoogleAuth != nil {
 		ga, err := authn.NewGoogleAuth(c.GoogleAuth)
@@ -118,6 +121,7 @@ func (as *AuthServer) ParseRequest(req *http.Request) (*AuthRequest, error) {
 		return nil, fmt.Errorf("unable to parse remote addr %s", req.RemoteAddr)
 	}
 	user, password, haveBasicAuth := req.BasicAuth()
+	glog.V(3).Infof("user : %s, password : %s, haveBasicAuth : %v", user, password, haveBasicAuth)
 	if haveBasicAuth {
 		ar.User = user
 		ar.Password = authn.PasswordString(password)
@@ -139,7 +143,9 @@ func (as *AuthServer) ParseRequest(req *http.Request) (*AuthRequest, error) {
 		ar.ai.Name = parts[1]
 		ar.ai.Actions = strings.Split(parts[2], ",")
 		sort.Strings(ar.ai.Actions)
+		glog.V(3).Infof("scope Type : %s, Name : %s, Actions : %s", ar.ai.Type, ar.ai.Name, ar.ai.Actions)
 	}
+	glog.V(3).Infoln("AuthServer :", ar)
 	return ar, nil
 }
 
@@ -205,9 +211,9 @@ func (as *AuthServer) CreateToken(ar *AuthRequest, actions []string) (string, er
 		Issuer:     tc.Issuer,
 		Subject:    ar.ai.Account,
 		Audience:   ar.ai.Service,
-		NotBefore:  now - 1,
+		NotBefore:  now - tc.Expiration / 2,
 		IssuedAt:   now,
-		Expiration: now + tc.Expiration,
+		Expiration: now + tc.Expiration / 2,
 		JWTID:      fmt.Sprintf("%d", rand.Int63()),
 		Access:     []*token.ResourceActions{},
 	}
