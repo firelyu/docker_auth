@@ -181,15 +181,44 @@ func (as *AuthServer) Authorize(ar *AuthRequest) ([]string, error) {
 			glog.Errorf("%s: %s", ar, err)
 			return nil, authz.NoMatch
 		}
+//		return result, nil
 
 		// Authorize the scope
-		glog.V(2).Infof("Authorize : scope %s", ar.ai.Name)
 		account := ar.ai.Account;
-		requestAccount := strings.Split(ar.ai.Name, "/")[0]
-		glog.V(2).Infof("account : %s, request account : %s", account, requestAccount)
+		glog.V(2).Infof("Authorize : account %s", account)
 
-		if strings.Compare(account, requestAccount) != 0 {
-			return result, authz.ScopeNoMatch
+		// admin has full acl
+		if strings.Compare(account, "super") == 0 {
+			if actionIsPull(ar.ai.Actions) && actionIsPush(ar.ai.Actions) && strings.Contains(ar.ai.Name, "/") {
+				glog.V(2).Infof("%s only push to root", account)
+				return result, authz.ScopeNoMatch
+			}
+		}
+
+		glog.V(2).Infof("Authorize : scope %s", ar.ai.Name)
+		// user can only pull public and self scope
+		if actionIsPull(ar.ai.Actions) && !actionIsPush(ar.ai.Actions) {
+			if strings.Contains(ar.ai.Name, "/") {
+				requestAccount := strings.Split(ar.ai.Name, "/")[0]
+				if strings.Compare(account, requestAccount) != 0 {
+					glog.V(3).Infof("%s can't pull %s", account, requestAccount)
+					return result, authz.ScopeNoMatch
+				}
+			}
+		}
+
+		// user only push to self scope
+		if actionIsPull(ar.ai.Actions) && actionIsPush(ar.ai.Actions) {
+			if !strings.Contains(ar.ai.Name, "/") {
+				glog.V(3).Infof("%s can't push to root", account)
+				return result, authz.ScopeNoMatch
+			} else {
+				requestAccount := strings.Split(ar.ai.Name, "/")[0]
+				if strings.Compare(account, requestAccount) != 0 {
+					glog.V(3).Infof("%s can't push to %s", account, requestAccount)
+					return result, authz.ScopeNoMatch
+				}
+			}
 		}
 
 		return result, nil
@@ -197,6 +226,28 @@ func (as *AuthServer) Authorize(ar *AuthRequest) ([]string, error) {
 	// Deny by default.
 	glog.Warningf("%s did not match any authz rule", ar.ai)
 	return nil, nil
+}
+
+func actionIsPull(actions []string) (bool)  {
+	isPull := false
+	for _, action := range actions {
+		if strings.Compare(action, "pull") == 0 {
+			isPull = true
+			break
+		}
+	}
+	return isPull
+}
+
+func actionIsPush(actions []string) (bool)  {
+	isPush := false
+	for _, action := range actions {
+		if strings.Compare(action, "push") == 0 {
+			isPush = true
+			break
+		}
+	}
+	return isPush
 }
 
 // https://github.com/docker/distribution/blob/master/docs/spec/auth/token.md#example

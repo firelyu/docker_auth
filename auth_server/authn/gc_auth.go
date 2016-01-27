@@ -31,14 +31,6 @@ type gcUsersAuth struct {
 }
 
 func (r GCRequirements) String() string {
-//	p := r.Password
-//	if p != "" {
-//		pm := PasswordString("***")
-//		r.Password = &pm
-//	}
-//	b, _ := json.Marshal(r)
-//	r.Password = p
-//	return string(b)
 	return string(r.Password)
 }
 

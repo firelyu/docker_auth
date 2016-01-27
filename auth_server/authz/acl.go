@@ -96,24 +96,6 @@ func (aa *aclAuthorizer) Authorize(ai *AuthRequestInfo) ([]string, error) {
 		if matched {
 			glog.V(2).Infof("%s matched %s (Comment: %s)", ai, e, e.Comment)
 			glog.V(3).Infof("request action : %s, authorize action : %s", ai.Actions, *e.Actions)
-//			if len(*e.Actions) == 1 && (*e.Actions)[0] == "*" {
-//				return ai.Actions, nil
-//			}
-//			actionsMatched := make([]bool, len(ai.Actions))
-//			for i, requestAction := range ai.Actions {
-//				actionsMatched[i] = false
-//				for _, authAction := range *e.Actions {
-//					if strings.Compare(requestAction, authAction) == 0 {
-//						actionsMatched[i] = true
-//						break
-//					}
-////					glog.V(3).Infof("request action : %s, authorize action : %s", requestAction, authAction)
-//				}
-//			}
-//			actionsAllMatched := true
-//			for _, m := range actionsMatched {
-//				actionsAllMatched = actionsAllMatched && m
-//			}
 
 			if !matchActions(ai, e) {
 				return nil, NoMatch
@@ -170,6 +152,7 @@ func matchIP(ipp *string, ip net.IP) bool {
 }
 
 func matchActions(ai *AuthRequestInfo, e ACLEntry) bool {
+	glog.V(3).Infof("request action : %s, authorize action : %s", ai.Actions, *e.Actions)
 	if len(*e.Actions) == 1 && (*e.Actions)[0] == "*" {
 		return true
 	}
@@ -182,6 +165,7 @@ func matchActions(ai *AuthRequestInfo, e ACLEntry) bool {
 				matchedList[i] = true
 				break
 			}
+
 		}
 	}
 

@@ -1,10 +1,10 @@
 server:
-  addr: ":5005"
+  addr: ":5001"
   certificate: examples/gc/ssl/server.pem
   key: examples/gc/ssl/server.key
 
 token:
-  issuer: "Acme auth server"  # Must match issuer in the Registry config.
+  issuer: "registry.authentication"  # Must match issuer in the Registry config.
   expiration: 900
 
 #users:
@@ -18,14 +18,19 @@ acl:
   - match: {account: "admin"}
     actions: ["*"]
     comment: "Admin has full access to everything."
+  - match: {account: "super"}
+    actions: ["pull", "push"]
+    comment: "super has full access to everything."
   - match: {account: "test"}
     actions: ["pull"]
     comment: "User \"user\" can pull stuff."
-  - match: {account: "user1"}
-    actions: ["pull"]
+  - match: {account: "user*"}
+    actions: ["pull", "push"]
     comment: "User \"user\" can pull stuff."
   # Access is denied by default.
 gc:
+  "super":
+    password: "super"
   "user1":
     password: "password1"
   "user2":
