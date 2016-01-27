@@ -31,6 +31,7 @@ import (
 	"github.com/firelyu/docker_auth/auth_server/authz"
 	"github.com/docker/distribution/registry/auth/token"
 	"github.com/golang/glog"
+	"strconv"
 )
 
 type AuthRequest struct {
@@ -173,13 +174,24 @@ func (as *AuthServer) Authorize(ar *AuthRequest) ([]string, error) {
 		result, err := a.Authorize(&ar.ai)
 		glog.V(2).Infof("Authz %s %s -> %s, %s", a.Name(), ar.ai, result, err)
 		if err != nil {
-			if err == authz.NoMatch {
-				continue
-			}
+//			if err == authz.NoMatch {
+//				continue
+//			}
 			err = fmt.Errorf("authz #%d returned error: %s", i+1, err)
 			glog.Errorf("%s: %s", ar, err)
 			return nil, authz.NoMatch
 		}
+
+		// Authorize the scope
+		glog.V(2).Infof("Authorize : scope %s", ar.ai.Name)
+		account := ar.ai.Account;
+		requestAccount := strings.Split(ar.ai.Name, "/")[0]
+		glog.V(2).Infof("account : %s, request account : %s", account, requestAccount)
+
+		if strings.Compare(account, requestAccount) != 0 {
+			return result, authz.ScopeNoMatch
+		}
+
 		return result, nil
 	}
 	// Deny by default.
@@ -202,10 +214,12 @@ func (as *AuthServer) CreateToken(ar *AuthRequest, actions []string) (string, er
 		SigningAlg: sigAlg,
 		KeyID:      tc.publicKey.KeyID(),
 	}
+	glog.V(3).Infoln("header", header)
 	headerJSON, err := json.Marshal(header)
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal header: %s", err)
 	}
+	glog.V(3).Infoln("headerJSON", headerJSON)
 
 	claims := token.ClaimSet{
 		Issuer:     tc.Issuer,
@@ -214,7 +228,7 @@ func (as *AuthServer) CreateToken(ar *AuthRequest, actions []string) (string, er
 		NotBefore:  now - tc.Expiration / 2,
 		IssuedAt:   now,
 		Expiration: now + tc.Expiration / 2,
-		JWTID:      fmt.Sprintf("%d", rand.Int63()),
+		JWTID:      strconv.Itoa(rand.Int()),
 		Access:     []*token.ResourceActions{},
 	}
 	if len(actions) > 0 {
@@ -222,12 +236,15 @@ func (as *AuthServer) CreateToken(ar *AuthRequest, actions []string) (string, er
 			&token.ResourceActions{Type: ar.ai.Type, Name: ar.ai.Name, Actions: actions},
 		}
 	}
+	glog.V(3).Infoln("claims", claims)
 	claimsJSON, err := json.Marshal(claims)
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal claims: %s", err)
 	}
+	glog.V(3).Infoln("claimsJSON", claimsJSON)
 
 	payload := fmt.Sprintf("%s%s%s", joseBase64UrlEncode(headerJSON), token.TokenSeparator, joseBase64UrlEncode(claimsJSON))
+	glog.V(3).Infoln("payload", payload)
 
 	sig, sigAlg2, err := tc.privateKey.Sign(strings.NewReader(payload), 0)
 	if err != nil || sigAlg2 != sigAlg {

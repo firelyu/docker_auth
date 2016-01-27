@@ -31,6 +31,7 @@ type Authorizer interface {
 }
 
 var NoMatch = errors.New("did not match any rule")
+var ScopeNoMatch = errors.New("did not match the scope")
 
 type AuthRequestInfo struct {
 	Account string
