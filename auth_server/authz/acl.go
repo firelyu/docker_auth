@@ -95,8 +95,28 @@ func (aa *aclAuthorizer) Authorize(ai *AuthRequestInfo) ([]string, error) {
 		matched := e.Matches(ai)
 		if matched {
 			glog.V(2).Infof("%s matched %s (Comment: %s)", ai, e, e.Comment)
-			if len(*e.Actions) == 1 && (*e.Actions)[0] == "*" {
-				return ai.Actions, nil
+			glog.V(3).Infof("request action : %s, authorize action : %s", ai.Actions, *e.Actions)
+//			if len(*e.Actions) == 1 && (*e.Actions)[0] == "*" {
+//				return ai.Actions, nil
+//			}
+//			actionsMatched := make([]bool, len(ai.Actions))
+//			for i, requestAction := range ai.Actions {
+//				actionsMatched[i] = false
+//				for _, authAction := range *e.Actions {
+//					if strings.Compare(requestAction, authAction) == 0 {
+//						actionsMatched[i] = true
+//						break
+//					}
+////					glog.V(3).Infof("request action : %s, authorize action : %s", requestAction, authAction)
+//				}
+//			}
+//			actionsAllMatched := true
+//			for _, m := range actionsMatched {
+//				actionsAllMatched = actionsAllMatched && m
+//			}
+
+			if !matchActions(ai, e) {
+				return nil, NoMatch
 			}
 			return StringSetIntersection(ai.Actions, *e.Actions), nil
 		}
@@ -147,6 +167,33 @@ func matchIP(ipp *string, ip net.IP) bool {
 		glog.Fatalf("Invalid IP pattern: %s", *ipp)
 	}
 	return ipnet.Contains(ip)
+}
+
+func matchActions(ai *AuthRequestInfo, e ACLEntry) bool {
+	if len(*e.Actions) == 1 && (*e.Actions)[0] == "*" {
+		return true
+	}
+
+	matchedList := make([]bool, len(ai.Actions))
+	for i, requestAction := range ai.Actions {
+		matchedList[i] = false
+		for _, aclAction := range *e.Actions {
+			if strings.Compare(requestAction, aclAction) == 0 {
+				matchedList[i] = true
+				break
+			}
+		}
+	}
+
+	allMatched := true
+	for _, m := range matchedList {
+		allMatched = allMatched && m
+	}
+
+	if !allMatched {
+		return false
+	}
+	return true
 }
 
 func (mc *MatchConditions) Matches(ai *AuthRequestInfo) bool {
